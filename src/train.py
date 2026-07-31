@@ -35,7 +35,7 @@ class ContinualBenchVecEnv:
         self.benchmark_mode = str(cfg.benchmark_mode)
         self.single_task_name = cfg.single_task_name
         self.vec_env_cls = self._resolve_vec_env_cls(cfg.vec_env_cls)
-        self.train_episodes_per_task = int(cfg.train.episodes_per_task)
+        self.train_steps_per_task = int(cfg.train.steps_per_task)
         self.eval_video_steps = int(cfg.eval.eval_video_steps)
         self.num_eval_episodes = int(cfg.eval.num_eval_episodes)
         self.replay_buffer_enabled = cfg.replay_buffer_enabled
@@ -267,14 +267,16 @@ class ContinualBenchVecEnv:
                     agent.load(str(save_dir))
                     print(f"[Task {task_idx}] Loaded checkpoint from task {training_order[task_idx - 1]}")
 
-                for ep in range(int(self.train_episodes_per_task)):
+                # task_start_step is frozen at the start of the task so the while loop runs per task steps
+                task_start_step = logger.global_step
+                while logger.global_step - task_start_step < self.train_steps_per_task:
                     obs = vec_env.reset() # reset the vec env
                     obs = self._augment_obs(task_name, obs)
                     episode_returns = np.zeros(vec_env.num_envs, dtype=np.float32)
                     episode_lengths = np.zeros(vec_env.num_envs, dtype=np.int32)
 
                     for t in range(max_episode_steps):
-                        if logger.global_step < learning_starts:
+                        if logger.global_step - task_start_step < learning_starts:
                             action_space = vec_env.action_space
                             actions = np.array([action_space.sample() for _ in range(vec_env.num_envs)])
                         else:
@@ -324,7 +326,7 @@ class ContinualBenchVecEnv:
 
                         if (
                             self.replay_buffer_enabled
-                            and logger.global_step > learning_starts
+                            and logger.global_step - task_start_step > learning_starts
                             and hasattr(agent, "update")
                         ):
                             for _ in range(self.num_envs):

@@ -8,8 +8,8 @@ hidden_size: 256
 policy_lr: 3e-4
 q_lr: 3e-4
 replay_buffer_size: 1000000
-gamma: 0.95
-tau: 5e-3
+gamma: 0.99
+tau: 0.005
 batch_size: 256
 learning_starts: 5000
 policy_frequency: 2
@@ -25,4 +25,4 @@ expert_buffer_size: 10_000
 # |D_τ|: expert-rollout buffer used for distillation (paper: 1e6)
 target_replay_buffer_size: 1_000_000
 nepochs_offline: 5
-rnd_batch_size: 128
+rnd_batch_size: 64

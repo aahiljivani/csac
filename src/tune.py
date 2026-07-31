@@ -103,7 +103,7 @@ def train_for_hpo(cfg, trial_number: int, params: dict) -> float:
                         [vec_env.action_space.sample() for _ in range(vec_env.num_envs)]
                     )
                 else:
-                    actions = agent.predict(obs)
+                    actions = agent.predict(obs, deterministic=False)
 
                 next_obs, rewards, dones, infos = vec_env.step(actions)
                 next_obs = bench._augment_obs(TASK, next_obs)
@@ -186,7 +186,7 @@ def sample_sac_params(trial: optuna.Trial) -> dict:
         "q_lr": trial.suggest_float("q_lr", 1e-4, 1e-3, log=True),
         "gamma": trial.suggest_categorical("gamma", [0.98, 0.99, 0.995]),
         "tau": trial.suggest_categorical("tau", [0.005, 0.01]),
-        "batch_size": trial.suggest_categorical("batch_size", [128, 256, 512]),
+        "batch_size": trial.suggest_categorical("batch_size", [64,128, 256, 512]),
         "learning_starts": trial.suggest_categorical("learning_starts", [1000, 5000, 10000]),
         "policy_frequency": trial.suggest_categorical("policy_frequency", [1, 2]),
         "target_network_frequency": trial.suggest_categorical("target_network_frequency", [1, 2]),

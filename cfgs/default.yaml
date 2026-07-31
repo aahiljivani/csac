@@ -28,7 +28,8 @@ logging:
   wandb_entity: jivani-aahil-university-of-ottawa
 
 train:
-  episodes_per_task: 200
+  # Environment steps (summed across parallel envs) spent on each task.
+  steps_per_task: 1_000_000
 
 eval:
   eval_video_steps: 100000

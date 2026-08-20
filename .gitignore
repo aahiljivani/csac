@@ -13,6 +13,9 @@ sync*
 *.png
 *.pkl
 *.pdf
+dreamerv2/
+peg/
+MoReFree/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -117,7 +117,7 @@ def _train_task_online(bench, cfg, vec_env, agent, rb, task_name, n_steps, globa
             ep_reward += float(np.mean(rewards))
             ep_success = max(ep_success, float(np.mean(successes)))
 
-            if global_step - task_start_step > learning_starts and hasattr(agent, "update"):
+            if global_step - task_start_step > learning_starts:
                 for _ in range(vec_env.num_envs):
                     data = rb.sample(cfg.batch_size)
                     metrics = agent.update(data)
@@ -299,7 +299,7 @@ def train_for_hpo(cfg, trial: optuna.Trial, params: dict, seed: int) -> float:
 
             # Reset & Distill: the online agent restarts from scratch on the
             # next task; knowledge is retained in the distilled offline actor.
-            if task_idx < len(TASK_SEQUENCE) - 1 and hasattr(agent, "reset"):
+            if task_idx < len(TASK_SEQUENCE) - 1:
                 agent.reset()
 
         combined_score = float(

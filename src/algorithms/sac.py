@@ -6,6 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+from .basepolicy import BasePolicy
+
 LOG_STD_MAX = 2
 LOG_STD_MIN = -5
 
@@ -92,7 +94,7 @@ class Actor(nn.Module):
         return action, log_prob, mean
 
 
-class SAC:
+class SAC(BasePolicy):
     def __init__(self, cfg, env):
         self.cfg = cfg
         self.env = env
@@ -128,6 +130,31 @@ class SAC:
             self.alpha = self.log_alpha.exp().item()
             self.a_optimizer = optim.Adam([self.log_alpha], lr=self.q_lr)
         return self
+
+    def collect_seed_episodes(self, env, buffer, augment_obs, augment_terminal_obs):
+        """Fill `buffer` with random-action rollouts until learning_starts env steps."""
+        obs = augment_obs(env.reset())
+        collected = 0
+        while collected < self.learning_starts:
+            actions = np.array(
+                [env.action_space.sample() for _ in range(env.num_envs)],
+                dtype=np.float32,
+            )
+            next_obs, rewards, dones, infos = env.step(actions)
+            next_obs = augment_obs(next_obs)
+            successes = np.array(
+                [float(info["success"]) for info in infos],
+                dtype=np.float32,
+            )
+            terminated = np.logical_and(dones, successes.astype(bool))
+            real_next_obs = next_obs.copy()
+            for idx, done in enumerate(dones):
+                if done:
+                    real_next_obs[idx] = augment_terminal_obs(infos[idx]["terminal_observation"])
+            buffer.add(obs, actions, rewards, terminated, real_next_obs)
+            obs = next_obs
+            collected += env.num_envs
+        return collected
 
     def predict(self, obs, deterministic=False):
         with torch.no_grad():

@@ -127,7 +127,7 @@ def train_for_hpo(cfg, trial_number: int, params: dict) -> float:
                 ep_reward += float(np.mean(rewards))
                 ep_success = max(ep_success, float(np.mean(successes)))
 
-                if global_step > learning_starts and hasattr(agent, "update"):
+                if global_step > learning_starts:
                     for _ in range(vec_env.num_envs):
                         data = rb.sample(cfg.batch_size)
                         metrics = agent.update(data)

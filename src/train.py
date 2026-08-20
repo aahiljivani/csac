@@ -18,7 +18,7 @@ from shimmy.openai_gym_compatibility import GymV21CompatibilityV0
 import torch
 from .cfg import parse_cfg
 from .logger import ContinualLogger
-from src.algorithms import RandomPolicy, SAC, RND_SAC
+from src.algorithms import SAC, RND_SAC
 from src.buffer import ReplayBuffer, ExpertBuffer
 
 
@@ -152,14 +152,10 @@ class ContinualBenchVecEnv:
         vec_env = self.vec_env_cls(env_fns, start_method="spawn")
         return self._expand_observation_space(vec_env)
 
-    def _build_policy(self, env, num_envs: int): # building SAC and PPO policies soon.
-        if self.cfg.policy == "RandomPolicy":
-            return RandomPolicy(env.action_space, num_envs)
-        elif self.cfg.policy == "SAC":
+    def _build_policy(self, env):
+        if self.cfg.policy == "SAC":
             return SAC(self.cfg, env).reset()
-        
-        else:
-            raise ValueError(f"Unsupported policy={self.cfg.policy}")
+        raise ValueError(f"Unsupported policy={self.cfg.policy}")
 
     def record_video(self, task_name, agent, logger, key_prefix: str = "eval/video"):
         '''
@@ -228,9 +224,7 @@ class ContinualBenchVecEnv:
         training_order = self._build_training_order()
         first_env = self.make_task_env(training_order[0])
         # building the policy will come from intitializing the agent first. i.e. calling SAC.reset()
-        agent = self._build_policy(first_env, num_envs=self.num_envs)
-        # maybe we need a buffer type?
-        # random action sampling until the learning starts
+        agent = self._build_policy(first_env)
         learning_starts = int(self.cfg.learning_starts)
         if self.replay_buffer_enabled:
             rb = ReplayBuffer(cfg=self.cfg, env=first_env)
@@ -263,12 +257,20 @@ class ContinualBenchVecEnv:
                     rb.reset()
                 # Without R&D, continue from the previous task checkpoint.
                 # With R&D, the online agent is reset after each task's eval instead.
-                if task_idx > 0 and not rnd_enabled and hasattr(agent, "load"):
+                if task_idx > 0 and not rnd_enabled:
                     agent.load(str(save_dir))
                     print(f"[Task {task_idx}] Loaded checkpoint from task {training_order[task_idx - 1]}")
 
                 # task_start_step is frozen at the start of the task so the while loop runs per task steps
                 task_start_step = logger.global_step
+                if logger.global_step - task_start_step < learning_starts:
+                    seed_steps = agent.collect_seed_episodes(
+                        vec_env,
+                        rb,
+                        lambda obs: self._augment_obs(task_name, obs),
+                        lambda terminal_obs: self._augment_terminal_obs(task_name, terminal_obs),
+                    )
+                    logger.global_step += seed_steps
                 while logger.global_step - task_start_step < self.train_steps_per_task:
                     obs = vec_env.reset() # reset the vec env
                     obs = self._augment_obs(task_name, obs)
@@ -276,13 +278,7 @@ class ContinualBenchVecEnv:
                     episode_lengths = np.zeros(vec_env.num_envs, dtype=np.int32)
 
                     for t in range(max_episode_steps):
-                        if logger.global_step - task_start_step < learning_starts:
-                            action_space = vec_env.action_space
-                            actions = np.array([action_space.sample() for _ in range(vec_env.num_envs)])
-                        else:
-                        # we can specify updates here and task specific buffer stuff. like if policy is sac warmup buffer and append to buffer
-                        # HERE
-                            actions = agent.predict(obs, deterministic=False)
+                        actions = agent.predict(obs, deterministic=False)
                         next_obs, rewards, dones, infos = vec_env.step(actions)
                         next_obs = self._augment_obs(task_name, next_obs)
                         episode_returns += rewards
@@ -327,7 +323,6 @@ class ContinualBenchVecEnv:
                         if (
                             self.replay_buffer_enabled
                             and logger.global_step - task_start_step > learning_starts
-                            and hasattr(agent, "update")
                         ):
                             for _ in range(self.num_envs):
                                 data = rb.sample(self.cfg.batch_size)
@@ -397,13 +392,12 @@ class ContinualBenchVecEnv:
                 self.record_offline_videos(seen_tasks, agent, logger)
                 print(f"[Task {task_idx}] Logged offline-actor videos for {seen_tasks}")
 
-            if hasattr(agent, "save"):
-                agent.save(str(save_dir))
-                print(f"[Task {task_idx}] Saved checkpoint after task {task_name}")
+            agent.save(str(save_dir))
+            print(f"[Task {task_idx}] Saved checkpoint after task {task_name}")
 
             # R&D: reset the online agent after eval so the next task trains from scratch.
             # The offline policy in rnd_sac is preserved across tasks.
-            if rnd_enabled and task_idx < len(training_order) - 1 and hasattr(agent, "reset"):
+            if rnd_enabled and task_idx < len(training_order) - 1:
                 agent.reset()
                 print(f"[Task {task_idx}] Reset online agent for next task")
                 

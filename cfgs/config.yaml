@@ -1,6 +1,6 @@
 defaults:
   - benchmark: continual
-  - algorithm: random_policy
+  - algorithm: sac
   - env: continualbench
   - logging: default
   - _self_

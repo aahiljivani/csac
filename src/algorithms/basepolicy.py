@@ -1,20 +1,31 @@
 from abc import ABC, abstractmethod
-import numpy as np 
+import numpy as np
+
 
 class BasePolicy(ABC):
     @abstractmethod
-    def predict(self, obs: np.ndarray, deterministic: bool)-> np.ndarray:
-        ...
-    @abstractmethod
-    def update(self, replay_buffer, logger, step) -> None:
+    def collect_seed_episodes(self, env, buffer, augment_obs, augment_terminal_obs) -> int:
         ...
 
     @abstractmethod
-    def save(self, path:str) -> None:
+    def predict(self, obs: np.ndarray, deterministic: bool) -> np.ndarray:
         ...
 
     @abstractmethod
-    def load(self, path:str) -> None:
+    def update(self, data) -> dict:
         ...
 
-    
+    @abstractmethod
+    def save(self, path: str) -> None:
+        ...
+
+    @abstractmethod
+    def load(self, path: str) -> None:
+        ...
+
+    @abstractmethod
+    def reset(self):
+        ...
+    @abstractmethod
+    def reset_state(self):
+        ...

@@ -8,7 +8,7 @@ CSAC currently only applies **Reset & Distill (R&D)** to **Soft Actor-Critic** o
 
 ## Status
 
-Work in progress. The R&D + SAC agent learns **3–4 of the 6 tasks** (`button`, `door`, `window`, `faucet`, `peg`). The pick-and-place cube task (`block`) was never learned at any point in training by the online agent. Hyperparameter tuning may be needed and is left as future work. Currently, I am looking at making either the offline agent learn post distillation of the 6 tasks or use a Multi-task RL pre-trained policy on all 6 tasks and then deploy continual learning post pre-training. I am leaning more towards the latter than the former based on my current research. 
+Work in progress. The R&D + SAC agent learns **3–4 of the 6 tasks** (button, door, window, faucet, peg). The pick-and-place cube task (`block`) was never learned at any point in training by the online agent. Hyperparameter tuning may be needed and is left as future work. Currently, I am looking at making either the offline agent learn post distillation of the 6 tasks which would need critic adjustments (warm start critic or a different normalized critic architecture) or use a Multi-task RL pre-trained policy on all 6 tasks and then deploy continual learning post pre-training. I am leaning more towards the latter than the former based on my current research. 
 
 ## Method
 

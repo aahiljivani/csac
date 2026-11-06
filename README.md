@@ -17,7 +17,9 @@ A continual RL agent should never stop learning ([Abel et al., 2023](https://arx
 1. **Make the distilled actor a learner.** R&D's offline actor only imitates frozen experts and never learns from reward. Pairing it with a critic, either warm-started from the online critic or using a normalized critic architecture, would let one persistent agent keep improving after distillation.
 2. **Multi-task pre-training, then continual learning.** Pre-train a policy with multi-task RL on all 6 tasks, then deploy it as a continual learner that keeps adapting after pre-training.
 
-I currently lean towards option 2. For it to count as continual learning, the post-pre-training phase must include something not seen during pre-training (new tasks, task variations, or dynamics shifts). Otherwise it only measures retention.## Method
+I currently lean towards option 2. For it to count as continual learning, the post-pre-training phase must include something not seen during pre-training (new tasks, task variations, or dynamics shifts). Otherwise it only measures retention.
+
+## Method
 
 For each task in sequence (`block → button → door → peg → window → faucet` by default):
 

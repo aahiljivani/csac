@@ -56,7 +56,7 @@ scripts/reproduce.sh -- cl_reg_coef=0.5           # pass any config override thr
 The script calls `python -m src.train policy=SAC ...` with the defaults: 1M environment steps per task and 10 parallel envs. Checkpoints are written to `models/`.
 
 ## Future work for ContinualBench
-- **GPU-parallel ContinualBench**: training currently runs on CPU through `SubprocVecEnv`, because the scene has too many dynamic object collisions to port easily. Moving the simulation to the GPU with MJWarp is left for later. Or we can port the same environment to ManiSkill3 (considering the latter option than the former)
+- **GPU-parallel ContinualBench**: training currently runs on CPU through `SubprocVecEnv`, because the scene has too many dynamic object collisions to port easily. Moving the simulation to the GPU with MJWarp is left for later. Or we can port the same environment to ManiSkill3 (considering the latter option rather than the former)
 
 ## Citation
 

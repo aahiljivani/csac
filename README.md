@@ -1,6 +1,6 @@
 # Continual SAC (CSAC) on ContinualBench
 
-CSAC applies **Reset & Distill (R&D)** to **Soft Actor-Critic** on [ContinualBench](https://github.com/sail-sg/ContinualBench), a single MuJoCo scene with six Sawyer-arm manipulation tasks trained one after another. Training is parallelized across CPU workers with Stable-Baselines3's `SubprocVecEnv`.
+CSAC currently only applies **Reset & Distill (R&D)** to **Soft Actor-Critic** on [ContinualBench](https://github.com/sail-sg/ContinualBench), a single MuJoCo scene with six Sawyer-arm manipulation tasks trained one after another. Training is parallelized across CPU workers with Stable-Baselines3's `SubprocVecEnv`.
 
 <p align="center">
   <img src="./continual_bench/illustration.jpg" width=70%/>
@@ -8,7 +8,7 @@ CSAC applies **Reset & Distill (R&D)** to **Soft Actor-Critic** on [ContinualBen
 
 ## Status
 
-Work in progress. The R&D + SAC agent learns **3–4 of the 6 tasks** (`button`, `door`, `window`, `faucet`, `peg`). The pick-and-place cube task (`block`) was never learned at any point in training and is left as future work.
+Work in progress. The R&D + SAC agent learns **3–4 of the 6 tasks** (`button`, `door`, `window`, `faucet`, `peg`). The pick-and-place cube task (`block`) was never learned at any point in training by the online agent. Hyperparameter tuning may be needed and is left as future work. Currently, I am looking at making either the offline agent learn post distillation of the 6 tasks or use a Multi-task RL pre-trained policy on all 6 tasks and then deploy continual learning post pre-training. I am leaning more towards the latter than the former based on my current research. 
 
 ## Method
 
@@ -51,7 +51,6 @@ The script calls `python -m src.train policy=SAC ...` with the defaults: 1M envi
 ## Future work
 
 - **Pick-cube (`block`)**: get the agent to learn the one task it has never solved.
-- **Config setup and sweeps**: adopt the config file layout and sweep setup from Arth Shukla's Substack post on parallel SAC with ManiSkill3.
 - **Plasticity-preserving optimizers**: try UPGD or Continual Backprop together with Reset & Distill for SAC.
 - **GPU-parallel ContinualBench**: training currently runs on CPU through `SubprocVecEnv`, because the scene has too many dynamic object collisions to port easily. Moving the simulation to the GPU with MJWarp is left for later.
 

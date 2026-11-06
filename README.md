@@ -8,9 +8,16 @@ CSAC currently only applies **Reset & Distill (R&D)** to **Soft Actor-Critic** o
 
 ## Status
 
-Work in progress. The R&D + SAC agent learns **3–4 of the 6 tasks** (button, door, window, faucet, peg). The pick-and-place cube task (`block`) was never learned at any point in training by the online agent. Hyperparameter tuning may be needed and is left as future work. Currently, I am looking at making either the offline agent learn post distillation of the 6 tasks which would need critic adjustments (warm start critic or a different normalized critic architecture) or use a Multi-task RL pre-trained policy on all 6 tasks and then deploy continual learning post pre-training. I am leaning more towards the latter than the former based on my current research. 
+Work in progress. The R&D + SAC agent learns **3–4 of the 6 tasks**; which ones varies by seed (`button`, `door`, `window`, `faucet`, `peg`). The pick-and-place cube task (`block`) was never learned by the online agent at any point in training, under any hyperparameter configuration tried, so it is never distilled.
 
-## Method
+### Next steps
+
+A continual RL agent should never stop learning ([Abel et al., 2023](https://arxiv.org/abs/2307.11046)). I am considering two directions:
+
+1. **Make the distilled actor a learner.** R&D's offline actor only imitates frozen experts and never learns from reward. Pairing it with a critic, either warm-started from the online critic or using a normalized critic architecture, would let one persistent agent keep improving after distillation.
+2. **Multi-task pre-training, then continual learning.** Pre-train a policy with multi-task RL on all 6 tasks, then deploy it as a continual learner that keeps adapting after pre-training.
+
+I currently lean towards option 2. For it to count as continual learning, the post-pre-training phase must include something not seen during pre-training (new tasks, task variations, or dynamics shifts). Otherwise it only measures retention.## Method
 
 For each task in sequence (`block → button → door → peg → window → faucet` by default):
 
@@ -48,11 +55,8 @@ scripts/reproduce.sh -- cl_reg_coef=0.5           # pass any config override thr
 
 The script calls `python -m src.train policy=SAC ...` with the defaults: 1M environment steps per task and 10 parallel envs. Checkpoints are written to `models/`.
 
-## Future work
-
-- **Pick-cube (`block`)**: get the agent to learn the one task it has never solved.
-- **Plasticity-preserving optimizers**: try UPGD or Continual Backprop together with Reset & Distill for SAC.
-- **GPU-parallel ContinualBench**: training currently runs on CPU through `SubprocVecEnv`, because the scene has too many dynamic object collisions to port easily. Moving the simulation to the GPU with MJWarp is left for later.
+## Future work for ContinualBench
+- **GPU-parallel ContinualBench**: training currently runs on CPU through `SubprocVecEnv`, because the scene has too many dynamic object collisions to port easily. Moving the simulation to the GPU with MJWarp is left for later. Or we can port the same environment to ManiSkill3 (considering the latter option than the former)
 
 ## Citation
 
